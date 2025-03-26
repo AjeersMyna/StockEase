@@ -6,14 +6,14 @@ $customerModel = new Customer($conn);
 
 // Get search and pagination parameters
 $search = isset($_GET['search']) ? trim($_GET['search']) : "";
-$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-$limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10; // Default to 10 entries per page
+$page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+$limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
 $offset = ($page - 1) * $limit;
 
-// Fetch customers with pagination
+// Fetch customers and total count
 $customers = $customerModel->getCustomers($search, $limit, $offset);
-$totalCustomers = $customerModel->getTotalCustomers($search); // Get total count for pagination
-$totalPages = ceil($totalCustomers / $limit);
+$totalCustomers = $customerModel->getTotalCustomers($search);
+$totalPages = max(1, ceil($totalCustomers / $limit));
 ?>
 
 <!DOCTYPE html>
@@ -70,12 +70,13 @@ $totalPages = ceil($totalCustomers / $limit);
                     <th>Email</th>
                     <th>Country</th>
                     <th>Xero</th>
-                    <th>Actions</th>
+                    <th>Edit</th>
+                    <th>Delete</th>
                 </tr>
             </thead>
             <tbody>
                 <?php foreach ($customers as $customer) : ?>
-                    <tr>
+                    <tr data-id="<?= htmlspecialchars($customer['id']) ?>">
                         <td><?= htmlspecialchars($customer['id']) ?></td>
                         <td><?= htmlspecialchars($customer['name']) ?></td>
                         <td><?= htmlspecialchars($customer['contact_name']) ?></td>
@@ -84,8 +85,10 @@ $totalPages = ceil($totalCustomers / $limit);
                         <td><?= htmlspecialchars($customer['country']) ?></td>
                         <td><?= htmlspecialchars($customer['xero_account']) ?></td>
                         <td>
-                            <a href="edit.php?id=<?= $customer['id'] ?>" class="btn btn-warning btn-sm">✏️</a>
-                            <a href="delete.php?id=<?= $customer['id'] ?>" class="btn btn-danger btn-sm">🗑️</a>
+                            <a href="edit.php?id=<?= htmlspecialchars($customer['id']) ?>" class="btn btn-warning btn-sm">✏️</a>
+                        </td>
+                        <td>
+                            <button class="btn btn-danger btn-sm delete-btn" data-id="<?= htmlspecialchars($customer['id']) ?>">🗑️</button>
                         </td>
                     </tr>
                 <?php endforeach; ?>
@@ -96,7 +99,7 @@ $totalPages = ceil($totalCustomers / $limit);
         <nav>
             <ul class="pagination">
                 <li class="page-item <?= $page == 1 ? 'disabled' : '' ?>">
-                    <a class="page-link" href="?search=<?= urlencode($search) ?>&limit=<?= $limit ?>&page=<?= $page - 1 ?>">Previous</a>
+                    <a class="page-link" href="?search=<?= urlencode($search) ?>&limit=<?= $limit ?>&page=<?= max(1, $page - 1) ?>">Previous</a>
                 </li>
                 <?php for ($i = 1; $i <= $totalPages; $i++) : ?>
                     <li class="page-item <?= $i == $page ? 'active' : '' ?>">
@@ -104,29 +107,79 @@ $totalPages = ceil($totalCustomers / $limit);
                     </li>
                 <?php endfor; ?>
                 <li class="page-item <?= $page == $totalPages ? 'disabled' : '' ?>">
-                    <a class="page-link" href="?search=<?= urlencode($search) ?>&limit=<?= $limit ?>&page=<?= $page + 1 ?>">Next</a>
+                    <a class="page-link" href="?search=<?= urlencode($search) ?>&limit=<?= $limit ?>&page=<?= min($totalPages, $page + 1) ?>">Next</a>
                 </li>
             </ul>
         </nav>
     </div>
 </div>
 
-<script>
-    $(document).ready(function() {
-        $("#entriesPerPage").on("change", function() {
-            let selectedLimit = $(this).val();
-            let searchValue = $("#search").val();
-            window.location.href = "customers.php?search=" + encodeURIComponent(searchValue) + "&limit=" + selectedLimit + "&page=1";
-        });
+<!-- Toast Notification -->
+<div class="toast-container position-fixed top-0 end-0 p-3">
+    <div id="deleteToast" class="toast bg-success text-white" role="alert">
+        <div class="toast-body"></div>
+    </div>
+</div>
 
-        $("#search").on("keypress", function(e) {
-            if (e.which === 13) {
-                let searchValue = $(this).val();
-                let selectedLimit = $("#entriesPerPage").val();
-                window.location.href = "customers.php?search=" + encodeURIComponent(searchValue) + "&limit=" + selectedLimit + "&page=1";
-            }
+<script>
+$(document).ready(function () {
+    function fetchCustomers(search = "", limit = 10, page = 1) {
+        $.ajax({
+            url: "fetch_customers.php",
+            type: "GET",
+            data: { search: search, limit: limit, page: page },
+            dataType: "json",
+            success: function (response) {
+                let tableBody = $("tbody");
+                tableBody.empty();
+
+                if (response.customers.length > 0) {
+                    response.customers.forEach(function (customer) {
+                        let row = `<tr data-id="${customer.id}">
+                            <td>${customer.id}</td>
+                            <td>${customer.name}</td>
+                            <td>${customer.contact_name}</td>
+                            <td>${customer.phone}</td>
+                            <td>${customer.email}</td>
+                            <td>${customer.country}</td>
+                            <td>${customer.xero_account}</td>
+                            <td>
+                                <a href="edit.php?id=${customer.id}" class="btn btn-warning btn-sm">✏️</a>
+                            </td>
+                            <td>
+                                <button class="btn btn-danger btn-sm delete-btn" data-id="${customer.id}">🗑️</button>
+                            </td>
+                        </tr>`;
+                        tableBody.append(row);
+                    });
+                } else {
+                    tableBody.append('<tr><td colspan="9" class="text-center">No customers found.</td></tr>');
+                }
+            },
+            error: function () {
+                console.log("Error fetching customers.");
+            },
         });
+    }
+
+    // Trigger AJAX search on input change
+    $("#search").on("keyup", function () {
+        let searchValue = $(this).val();
+        let selectedLimit = $("#entriesPerPage").val();
+        fetchCustomers(searchValue, selectedLimit, 1);
     });
+
+    // Handle page load and dropdown changes
+    $("#entriesPerPage").on("change", function () {
+        let selectedLimit = $(this).val();
+        let searchValue = $("#search").val();
+        fetchCustomers(searchValue, selectedLimit, 1);
+    });
+
+    // Initial fetch
+    fetchCustomers();
+});
+
 </script>
 
 </body>

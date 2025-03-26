@@ -1,29 +1,5 @@
 <?php
 include 'db.php';
-
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $name = $_POST['name'];
-    $contact_name = $_POST['contact_name'];
-    $phone = $_POST['phone'];
-    $email = $_POST['email'];
-    $country = $_POST['country'];
-    $city = $_POST['city'];
-    $state = $_POST['state'];
-    $postal_code = $_POST['postal_code'];
-    $vat = $_POST['vat'];
-    $xero_account = $_POST['xero_account'];
-    $invoice_due_date = $_POST['invoice_due_date'];
-
-    $stmt = $conn->prepare("INSERT INTO customers (name, contact_name, phone, email, country, city, state, postal_code, vat, xero_account, invoice_due_date) 
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("ssssssssssi", $name, $contact_name, $phone, $email, $country, $city, $state, $postal_code, $vat, $xero_account, $invoice_due_date);
-    
-    if ($stmt->execute()) {
-        header("Location: customers.php");
-    } else {
-        echo "Error: " . $stmt->error;
-    }
-}
 ?>
 
 <!DOCTYPE html>
@@ -32,12 +8,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <meta charset="UTF-8">
     <title>Add Customer</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body class="bg-light">
 <div class="container mt-5">
     <div class="card shadow-lg p-4">
         <h3 class="text-center mb-4">Add New Customer</h3>
-        <form method="POST" class="row g-3">
+        <div id="alert-message" class="alert d-none"></div> <!-- Success/Error Message -->
+        <form id="addCustomerForm" class="row g-3">
             <div class="col-md-6">
                 <label class="form-label">Customer Name</label>
                 <input type="text" name="name" class="form-control" required>
@@ -84,9 +62,38 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </div>
             <div class="col-12">
                 <button type="submit" class="btn btn-primary w-100">Add Customer</button>
+                <a href="customers.php" class="btn btn-secondary w-100 mt-2">Back</a>
             </div>
         </form>
     </div>
 </div>
+
+<script>
+    $(document).ready(function () {
+        $("#addCustomerForm").submit(function (event) {
+            event.preventDefault(); // Prevent page reload
+
+            $.ajax({
+                url: "add_customer.php",
+                type: "POST",
+                data: $(this).serialize(),
+                dataType: "json",
+                success: function (response) {
+                    let alertBox = $("#alert-message");
+                    if (response.success) {
+                        alertBox.removeClass("d-none alert-danger").addClass("alert-success").text(response.message);
+                        $("#addCustomerForm")[0].reset(); // Clear form fields
+                    } else {
+                        alertBox.removeClass("d-none alert-success").addClass("alert-danger").text(response.message);
+                    }
+                },
+                error: function () {
+                    $("#alert-message").removeClass("d-none alert-success").addClass("alert-danger").text("An error occurred. Please try again.");
+                }
+            });
+        });
+    });
+</script>
+
 </body>
 </html>

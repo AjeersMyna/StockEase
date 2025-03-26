@@ -2,7 +2,6 @@
 require_once 'db.php';
 require_once 'models/Customer.php';
 
-// Initialize the customer model
 $customerModel = new Customer($conn);
 
 // Check if ID is provided
@@ -17,27 +16,6 @@ $customer = $customerModel->getCustomerById($id);
 if (!$customer) {
     die("Customer not found.");
 }
-
-// Handle form submission
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $data = [
-        'name' => $_POST['name'],
-        'contact_name' => $_POST['contact_name'],
-        'phone' => $_POST['phone'],
-        'email' => $_POST['email'],
-        'country' => $_POST['country'],
-        'xero_account' => $_POST['xero_account']
-    ];
-
-    $updateSuccess = $customerModel->updateCustomer($id, $data);
-
-    if ($updateSuccess) {
-        header("Location: customers.php?updated=1");
-        exit;
-    } else {
-        echo "<p style='color: red;'>Error updating customer.</p>";
-    }
-}
 ?>
 
 <!DOCTYPE html>
@@ -46,11 +24,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <meta charset="UTF-8">
     <title>Edit Customer</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
     <div class="container mt-5">
         <h2>Edit Customer</h2>
-        <form method="POST">
+        <div id="alert-message" class="alert d-none"></div>
+
+        <form id="editCustomerForm">
+            <input type="hidden" name="id" value="<?= $id ?>">
             <div class="mb-3">
                 <label class="form-label">Customer Name</label>
                 <input type="text" name="name" class="form-control" value="<?= htmlspecialchars($customer['name']) ?>" required>
@@ -79,5 +61,30 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <a href="customers.php" class="btn btn-secondary">Cancel</a>
         </form>
     </div>
+
+    <script>
+        $(document).ready(function() {
+            $("#editCustomerForm").submit(function(event) {
+                event.preventDefault();
+
+                $.ajax({
+                    url: "edit_customer.php",
+                    type: "POST",
+                    data: $(this).serialize(),
+                    dataType: "json",
+                    success: function(response) {
+                        if (response.success) {
+                            $("#alert-message").removeClass("d-none alert-danger").addClass("alert-success").text(response.message);
+                        } else {
+                            $("#alert-message").removeClass("d-none alert-success").addClass("alert-danger").text(response.message);
+                        }
+                    },
+                    error: function() {
+                        $("#alert-message").removeClass("d-none alert-success").addClass("alert-danger").text("An error occurred.");
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 </html>
