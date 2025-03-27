@@ -1,4 +1,10 @@
 <?php
+session_start();
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login.php"); // Redirect to login if not logged in
+    exit();
+}
+
 require_once 'db.php';
 require_once 'models/Customer.php';
 
@@ -37,7 +43,7 @@ $totalPages = max(1, ceil($totalCustomers / $limit));
             <li class="nav-item"><a class="nav-link text-white" href="#">Purchase</a></li>
             <li class="nav-item"><a class="nav-link text-white" href="#">Inventory</a></li>
             <li class="nav-item"><a class="nav-link text-white" href="#">System</a></li>
-            <li class="nav-item"><a class="nav-link text-white" href="#">Logout</a></li>
+            <li class="nav-item"><a class="nav-link text-white" href="logout.php">Logout</a></li>
         </ul>
     </nav>
 
@@ -162,24 +168,20 @@ $(document).ready(function () {
         });
     }
 
-    // Trigger AJAX search on input change
     $("#search").on("keyup", function () {
         let searchValue = $(this).val();
         let selectedLimit = $("#entriesPerPage").val();
         fetchCustomers(searchValue, selectedLimit, 1);
     });
 
-    // Handle page load and dropdown changes
     $("#entriesPerPage").on("change", function () {
         let selectedLimit = $(this).val();
         let searchValue = $("#search").val();
         fetchCustomers(searchValue, selectedLimit, 1);
     });
 
-    // Initial fetch
     fetchCustomers();
 });
-
 </script>
 
 </body>

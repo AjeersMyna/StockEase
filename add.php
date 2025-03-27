@@ -15,7 +15,9 @@ include 'db.php';
     <div class="card shadow-lg p-4">
         <h3 class="text-center mb-4">Add New Customer</h3>
         <div id="alert-message" class="alert d-none"></div> <!-- Success/Error Message -->
-        <form id="addCustomerForm" class="row g-3">
+
+        <!-- 🔹 Added enctype="multipart/form-data" to handle file uploads -->
+        <form id="addCustomerForm" class="row g-3" enctype="multipart/form-data">
             <div class="col-md-6">
                 <label class="form-label">Customer Name</label>
                 <input type="text" name="name" class="form-control" required>
@@ -60,6 +62,13 @@ include 'db.php';
                 <label class="form-label">Invoice Due Date</label>
                 <input type="number" name="invoice_due_date" class="form-control">
             </div>
+
+            <!-- 🔹 New File Upload Input -->
+            <div class="col-md-12">
+                <label class="form-label">Profile Picture</label>
+                <input type="file" name="profile_picture" class="form-control">
+            </div>
+
             <div class="col-12">
                 <button type="submit" class="btn btn-primary w-100">Add Customer</button>
                 <a href="customers.php" class="btn btn-secondary w-100 mt-2">Back</a>
@@ -73,22 +82,34 @@ include 'db.php';
         $("#addCustomerForm").submit(function (event) {
             event.preventDefault(); // Prevent page reload
 
+            let formData = new FormData(this); // Use FormData for file uploads
+
             $.ajax({
-                url: "add_customer.php",
+                url: "add_customers.php", // Make sure this matches the actual PHP file
                 type: "POST",
-                data: $(this).serialize(),
+                data: formData,
+                contentType: false,
+                processData: false,
                 dataType: "json",
+                beforeSend: function () {
+                    $("button[type='submit']").prop("disabled", true).text("Processing...");
+                },
                 success: function (response) {
                     let alertBox = $("#alert-message");
+                    alertBox.removeClass("d-none alert-danger alert-success");
+
                     if (response.success) {
-                        alertBox.removeClass("d-none alert-danger").addClass("alert-success").text(response.message);
+                        alertBox.addClass("alert-success").text(response.message);
                         $("#addCustomerForm")[0].reset(); // Clear form fields
                     } else {
-                        alertBox.removeClass("d-none alert-success").addClass("alert-danger").text(response.message);
+                        alertBox.addClass("alert-danger").text(response.message);
                     }
                 },
                 error: function () {
                     $("#alert-message").removeClass("d-none alert-success").addClass("alert-danger").text("An error occurred. Please try again.");
+                },
+                complete: function () {
+                    $("button[type='submit']").prop("disabled", false).text("Add Customer");
                 }
             });
         });
