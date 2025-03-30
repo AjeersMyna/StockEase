@@ -4,37 +4,35 @@ include 'db.php';
 header('Content-Type: application/json');
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    if (isset($_POST['id']) && is_numeric($_POST['id'])) {
-        $id = intval($_POST['id']); // Ensure it's an integer
+    $data = json_decode(file_get_contents("php://input"), true);
 
-        // Check if customer exists before deleting
-        $checkStmt = $conn->prepare("SELECT id FROM customers_1 WHERE id = ?");
-        $checkStmt->bind_param("i", $id);
-        $checkStmt->execute();
-        $result = $checkStmt->get_result();
+    if (isset($data['id']) && is_numeric($data['id'])) {
+        $id = intval($data['id']);
 
-        if ($result->num_rows > 0) {
-            // Proceed with deletion
-            $stmt = $conn->prepare("DELETE FROM customers_1 WHERE id = ?");
-            $stmt->bind_param("i", $id);
+        try {
+            // Check if customer exists before deleting
+            $checkStmt = $conn->prepare("SELECT id FROM customers_1 WHERE id = ?");
+            $checkStmt->execute([$id]);
+            $customerExists = $checkStmt->fetch();
 
-            if ($stmt->execute()) {
-                echo json_encode(["success" => true, "message" => "Customer deleted successfully"]);
+            if ($customerExists) {
+                // Delete customer
+                $stmt = $conn->prepare("DELETE FROM customers_1 WHERE id = ?");
+                if ($stmt->execute([$id])) {
+                    echo json_encode(["success" => true, "message" => "Customer deleted successfully"]);
+                } else {
+                    echo json_encode(["success" => false, "message" => "Error deleting customer"]);
+                }
             } else {
-                echo json_encode(["success" => false, "message" => "Error deleting customer"]);
+                echo json_encode(["success" => false, "message" => "Customer not found"]);
             }
-            $stmt->close();
-        } else {
-            echo json_encode(["success" => false, "message" => "Customer not found"]);
+        } catch (PDOException $e) {
+            echo json_encode(["success" => false, "message" => "Database error: " . $e->getMessage()]);
         }
-
-        $checkStmt->close();
     } else {
         echo json_encode(["success" => false, "message" => "Invalid customer ID"]);
     }
 } else {
     echo json_encode(["success" => false, "message" => "Invalid request method"]);
 }
-
-$conn->close();
 ?>

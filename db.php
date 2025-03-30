@@ -1,20 +1,22 @@
 <?php
-$servername = "localhost";
-$username = "root";  // Default XAMPP username
-$password = "";  // Default XAMPP password (empty)
-$dbname = "STOCKEASE_CUSTOMERS";  // Your database name
+$host = "localhost";
+$dbname = "STOCKEASE_CUSTOMERS";
+$username = "root";
+$password = "";
 
-// Create a connection
-$conn = new mysqli($servername, $username, $password, $dbname);
+try {
+    // Create a new PDO connection
+    $conn = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);
 
-// Check connection with better error handling
-if ($conn->connect_error) {
-    die("Database Connection Failed: (" . $conn->connect_errno . ") " . $conn->connect_error);
+    // Set PDO to throw exceptions on error
+    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+    // Set default fetch mode to associative array
+    $conn->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+
+    // Optional: Display a success message for debugging (Remove in production)
+    # echo "Database connected successfully!";
+} catch (PDOException $e) {
+    die("Database Connection Failed: " . $e->getMessage());
 }
-
-// Set character set to UTF-8 (Recommended for compatibility)
-$conn->set_charset("utf8");
-
-// Optional: Display a success message for debugging (Remove in production)
-# echo "Database connected successfully!";
 ?>

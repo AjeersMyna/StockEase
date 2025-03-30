@@ -21,8 +21,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
     // Insert user into database
-    $stmt = $conn->prepare("INSERT INTO users (username, password, role) VALUES (?, ?, ?)");
-    $stmt->bind_param("sss", $username, $hashed_password, $role);
+    if ($conn instanceof mysqli) {
+        $stmt = $conn->prepare("INSERT INTO users (username, password, role) VALUES (?, ?, ?)");
+        if ($stmt) {
+            $stmt->bind_param("sss", $username, $hashed_password, $role);
+        } else {
+            die("Error preparing statement: " . $conn->error);
+        }
+    } else {
+        die("Database connection is invalid.");
+    }
 
     if ($stmt->execute()) {
         echo "User added successfully!";

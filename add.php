@@ -16,7 +16,6 @@ include 'db.php';
         <h3 class="text-center mb-4">Add New Customer</h3>
         <div id="alert-message" class="alert d-none"></div> <!-- Success/Error Message -->
 
-        <!-- 🔹 Added enctype="multipart/form-data" to handle file uploads -->
         <form id="addCustomerForm" class="row g-3" enctype="multipart/form-data">
             <div class="col-md-6">
                 <label class="form-label">Customer Name</label>
@@ -63,7 +62,6 @@ include 'db.php';
                 <input type="number" name="invoice_due_date" class="form-control">
             </div>
 
-            <!-- 🔹 New File Upload Input -->
             <div class="col-md-12">
                 <label class="form-label">Profile Picture</label>
                 <input type="file" name="profile_picture" class="form-control">
@@ -85,14 +83,14 @@ include 'db.php';
             let formData = new FormData(this); // Use FormData for file uploads
 
             $.ajax({
-                url: "add_customers.php", // Make sure this matches the actual PHP file
+                url: "add_customer.php", // ✅ Correct the filename if needed
                 type: "POST",
                 data: formData,
                 contentType: false,
                 processData: false,
                 dataType: "json",
                 beforeSend: function () {
-                    $("button[type='submit']").prop("disabled", true).text("Processing...");
+                    $("button[type='submit']").html('<span class="spinner-border spinner-border-sm"></span> Processing...').prop("disabled", true);
                 },
                 success: function (response) {
                     let alertBox = $("#alert-message");
@@ -101,6 +99,11 @@ include 'db.php';
                     if (response.success) {
                         alertBox.addClass("alert-success").text(response.message);
                         $("#addCustomerForm")[0].reset(); // Clear form fields
+
+                        // ✅ Redirect to customers list after 2 seconds
+                        setTimeout(function () {
+                            window.location.href = "customers.php";
+                        }, 2000);
                     } else {
                         alertBox.addClass("alert-danger").text(response.message);
                     }
@@ -109,12 +112,15 @@ include 'db.php';
                     $("#alert-message").removeClass("d-none alert-success").addClass("alert-danger").text("An error occurred. Please try again.");
                 },
                 complete: function () {
-                    $("button[type='submit']").prop("disabled", false).text("Add Customer");
+                    $("button[type='submit']").html("Add Customer").prop("disabled", false);
                 }
             });
         });
     });
 </script>
+
+<!-- ✅ Add Bootstrap JavaScript for better UI -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 </body>
 </html>

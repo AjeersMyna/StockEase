@@ -67,24 +67,41 @@ if (!$customer) {
             $("#editCustomerForm").submit(function(event) {
                 event.preventDefault();
 
+                let form = $(this);
+                let alertBox = $("#alert-message");
+
                 $.ajax({
                     url: "edit_customer.php",
                     type: "POST",
-                    data: $(this).serialize(),
+                    data: form.serialize(),
                     dataType: "json",
+                    beforeSend: function () {
+                        $("button[type='submit']").html('<span class="spinner-border spinner-border-sm"></span> Updating...').prop("disabled", true);
+                    },
                     success: function(response) {
+                        alertBox.removeClass("d-none alert-danger alert-success");
+
                         if (response.success) {
-                            $("#alert-message").removeClass("d-none alert-danger").addClass("alert-success").text(response.message);
+                            alertBox.addClass("alert-success").text(response.message);
+
+                            // ✅ Redirect after 2 seconds
+                            setTimeout(function () {
+                                window.location.replace("customers.php");
+                            }, 2000);
                         } else {
-                            $("#alert-message").removeClass("d-none alert-success").addClass("alert-danger").text(response.message);
+                            alertBox.addClass("alert-danger").text(response.message);
                         }
                     },
                     error: function() {
-                        $("#alert-message").removeClass("d-none alert-success").addClass("alert-danger").text("An error occurred.");
+                        alertBox.removeClass("d-none alert-success").addClass("alert-danger").text("An error occurred.");
+                    },
+                    complete: function () {
+                        $("button[type='submit']").html("Update").prop("disabled", false);
                     }
                 });
             });
         });
     </script>
+
 </body>
 </html>

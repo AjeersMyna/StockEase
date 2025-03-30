@@ -67,40 +67,39 @@ $totalPages = max(1, ceil($totalCustomers / $limit));
 
         <!-- Customer Table -->
         <table class="table table-bordered table-striped">
-            <thead class="table-dark">
-                <tr>
-                    <th>Customer ID</th>
-                    <th>Customer Name</th>
-                    <th>Contact Name</th>
-                    <th>Phone</th>
-                    <th>Email</th>
-                    <th>Country</th>
-                    <th>Xero</th>
-                    <th>Edit</th>
-                    <th>Delete</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($customers as $customer) : ?>
-                    <tr data-id="<?= htmlspecialchars($customer['id']) ?>">
-                        <td><?= htmlspecialchars($customer['id']) ?></td>
-                        <td><?= htmlspecialchars($customer['name']) ?></td>
-                        <td><?= htmlspecialchars($customer['contact_name']) ?></td>
-                        <td><?= htmlspecialchars($customer['phone']) ?></td>
-                        <td><?= htmlspecialchars($customer['email']) ?></td>
-                        <td><?= htmlspecialchars($customer['country']) ?></td>
-                        <td><?= htmlspecialchars($customer['xero_account']) ?></td>
-                        <td>
-                            <a href="edit.php?id=<?= htmlspecialchars($customer['id']) ?>" class="btn btn-warning btn-sm">✏️</a>
-                        </td>
-                        <td>
-                            <button class="btn btn-danger btn-sm delete-btn" data-id="<?= htmlspecialchars($customer['id']) ?>">🗑️</button>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-
+    <thead class="table-dark">
+        <tr>
+            <th>Customer ID</th>
+            <th>Customer Name</th>
+            <th>Contact Name</th>
+            <th>Phone</th>
+            <th>Email</th>
+            <th>Country</th>
+            <th>Xero</th>
+            <th>Edit</th>
+            <th>Delete</th>
+        </tr>
+    </thead>
+    <tbody>
+        <?php foreach ($customers as $customer) : ?>
+            <tr data-id="<?= htmlspecialchars($customer['id']) ?>">
+                <td><?= htmlspecialchars($customer['id']) ?></td>
+                <td><?= htmlspecialchars($customer['name']) ?></td>
+                <td><?= htmlspecialchars($customer['contact_name']) ?></td>
+                <td><?= htmlspecialchars($customer['phone']) ?></td>
+                <td><?= htmlspecialchars($customer['email']) ?></td>
+                <td><?= htmlspecialchars($customer['country']) ?></td>
+                <td><?= htmlspecialchars($customer['xero_account']) ?></td>
+                <td>
+                    <a href="edit.php?id=<?= htmlspecialchars($customer['id']) ?>" class="btn btn-warning btn-sm">✏️</a>
+                </td>
+                <td>
+                    <button class="btn btn-danger btn-sm delete-btn" data-id="<?= htmlspecialchars($customer['id']) ?>">🗑️</button>
+                </td>
+            </tr>
+        <?php endforeach; ?>
+    </tbody>
+</table>
         <!-- Pagination -->
         <nav>
             <ul class="pagination">
@@ -129,59 +128,45 @@ $totalPages = max(1, ceil($totalCustomers / $limit));
 
 <script>
 $(document).ready(function () {
-    function fetchCustomers(search = "", limit = 10, page = 1) {
+    // Delete customer on button click
+    $(document).on("click", ".delete-btn", function () {
+        let customerId = $(this).data("id");
+
+        if (!confirm("Are you sure you want to delete this customer?")) return;
+
         $.ajax({
-            url: "fetch_customers.php",
-            type: "GET",
-            data: { search: search, limit: limit, page: page },
+            url: "delete.php", // Ensure this matches your API endpoint
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({ id: customerId }),
             dataType: "json",
             success: function (response) {
-                let tableBody = $("tbody");
-                tableBody.empty();
-
-                if (response.customers.length > 0) {
-                    response.customers.forEach(function (customer) {
-                        let row = `<tr data-id="${customer.id}">
-                            <td>${customer.id}</td>
-                            <td>${customer.name}</td>
-                            <td>${customer.contact_name}</td>
-                            <td>${customer.phone}</td>
-                            <td>${customer.email}</td>
-                            <td>${customer.country}</td>
-                            <td>${customer.xero_account}</td>
-                            <td>
-                                <a href="edit.php?id=${customer.id}" class="btn btn-warning btn-sm">✏️</a>
-                            </td>
-                            <td>
-                                <button class="btn btn-danger btn-sm delete-btn" data-id="${customer.id}">🗑️</button>
-                            </td>
-                        </tr>`;
-                        tableBody.append(row);
+                if (response.success) {
+                    // Remove row from table
+                    $(`tr[data-id="${customerId}"]`).fadeOut(300, function () {
+                        $(this).remove();
                     });
+
+                    showToast("Customer deleted successfully!", "success");
                 } else {
-                    tableBody.append('<tr><td colspan="9" class="text-center">No customers found.</td></tr>');
+                    showToast(response.message, "danger");
                 }
             },
             error: function () {
-                console.log("Error fetching customers.");
+                showToast("Failed to delete customer. Please try again.", "danger");
             },
         });
+    });
+
+    // Function to display toast notification
+    function showToast(message, type) {
+        let toast = $("#deleteToast");
+        toast.removeClass("bg-success bg-danger").addClass("bg-" + type);
+        toast.find(".toast-body").text(message);
+        toast.toast("show");
     }
-
-    $("#search").on("keyup", function () {
-        let searchValue = $(this).val();
-        let selectedLimit = $("#entriesPerPage").val();
-        fetchCustomers(searchValue, selectedLimit, 1);
-    });
-
-    $("#entriesPerPage").on("change", function () {
-        let selectedLimit = $(this).val();
-        let searchValue = $("#search").val();
-        fetchCustomers(searchValue, selectedLimit, 1);
-    });
-
-    fetchCustomers();
 });
+
 </script>
 
 </body>

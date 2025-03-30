@@ -1,22 +1,25 @@
 <?php
 session_start();
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 include 'db.php'; // Ensure database connection is included
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $username = $_POST['username'];
     $password = $_POST['password'];
 
-    // Prepare and execute the SQL statement
-    $stmt = $conn->prepare("SELECT id, username, password FROM users WHERE username = ?");
-    $stmt->bind_param("s", $username);
+    // Prepare and execute the SQL statement using PDO
+    $stmt = $conn->prepare("SELECT id, username, password FROM users WHERE username = :username");
+    $stmt->bindParam(":username", $username, PDO::PARAM_STR);
     $stmt->execute();
-    $stmt->bind_result($id, $username, $hashed_password);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if ($stmt->fetch()) {
+    if ($user) {
         // Verify password
-        if (password_verify($password, $hashed_password)) {
-            $_SESSION['user_id'] = $id;
-            $_SESSION['username'] = $username;
+        if (password_verify($password, $user['password'])) {
+            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['username'] = $user['username'];
             header("Location: customers.php"); // Redirect to dashboard after login
             exit();
         } else {
@@ -25,8 +28,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     } else {
         $error = "User not found.";
     }
-    $stmt->close();
-    $conn->close();
 }
 ?>
 
