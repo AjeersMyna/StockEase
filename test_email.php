@@ -2,30 +2,33 @@
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-require 'vendor/autoload.php';
+require 'vendor/autoload.php'; // Include PHPMailer
 
 $mail = new PHPMailer(true);
 
 try {
     // SMTP Configuration
     $mail->isSMTP();
-    $mail->Host       = 'smtp.gmail.com'; // Replace with your SMTP server
+    $mail->Host       = 'smtp.gmail.com'; 
     $mail->SMTPAuth   = true;
-    $mail->Username   = 'benedmathews@gmail.com'; // Replace with your email
-    $mail->Password   = 'Neneraju@2030'; // Replace with your email password
-    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-    $mail->Port       = 587;
+    $mail->Username   = 'stockease004@gmail.com'; // Your Gmail address
+    $mail->Password   = 'geasfnfohpiqdfjt'; // Use your new App Password (NO SPACES)
+    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; 
+    $mail->Port       = 587; 
 
-    // Email Details
-    $mail->setFrom('benedmathews@gmail.com', 'SreejaM');
-    $mail->addAddress('smynampati04@gmail.com', 'Bened'); // Change recipient
+    // Email Headers
+    $mail->setFrom('stockease004@gmail.com', 'Stockease'); 
+    $mail->addAddress('smynampati04@gmail.com', 'Sreeja'); // Replace with recipient email
 
-    $mail->Subject = 'Test Email from PHPMailer';
-    $mail->Body    = 'This is a test email sent using PHPMailer in PHP.';
+    // Email Content
+    $mail->isHTML(true);
+    $mail->Subject = 'Test Email from PHP';
+    $mail->Body    = '<h1>Hello, This is a test email from PHP using Gmail SMTP!</h1>';
+    $mail->AltBody = 'Hello, This is a test email from PHP using Gmail SMTP!';
 
     $mail->send();
-    echo '✅ Email sent successfully!';
+    echo '✅ Message has been sent successfully!';
 } catch (Exception $e) {
-    echo "❌ Email failed to send. Error: {$mail->ErrorInfo}";
+    echo "❌ Message could not be sent. Mailer Error: {$mail->ErrorInfo}";
 }
 ?>
