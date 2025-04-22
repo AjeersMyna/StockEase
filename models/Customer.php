@@ -19,11 +19,10 @@ class Customer {
             $existingCustomer = $this->getCustomerById($id);
             $profile_image_path = $existingCustomer['profile_image'] ?? null;
 
-            // Handle new profile picture upload
             if ($file && $file['error'] == UPLOAD_ERR_OK) {
                 $allowed_types = ['image/jpeg', 'image/png', 'image/gif'];
                 if (!in_array($file['type'], $allowed_types)) {
-                    return json_encode(["success" => false, "message" => "Invalid image format. Only JPG, PNG, and GIF are allowed."]);
+                    return json_encode(["success" => false, "message" => "Invalid image format. Only JPG, PNG, and GIF allowed."]);
                 }
 
                 $upload_dir = "uploads/";
@@ -66,22 +65,36 @@ class Customer {
     public function getCustomers($search = "", $limit = 10, $offset = 0) {
         $sql = "SELECT * FROM customers_1 WHERE 1";
         $params = [];
-    
+
         if (!empty($search)) {
             $sql .= " AND (name LIKE ? OR contact_name LIKE ? OR email LIKE ?)";
             $params[] = "%$search%";
             $params[] = "%$search%";
             $params[] = "%$search%";
         }
-    
-        // ✅ Fix: Directly concatenate LIMIT & OFFSET (safe because they are integers)
+
         $sql .= " LIMIT " . (int)$limit . " OFFSET " . (int)$offset;
-    
+
         $stmt = $this->conn->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-    
+
+    public function getTotalCustomers($search = "") {
+        $sql = "SELECT COUNT(*) as total FROM customers_1";
+        $params = [];
+
+        if (!empty($search)) {
+            $sql .= " WHERE name LIKE ? OR contact_name LIKE ? OR email LIKE ?";
+            $params[] = "%$search%";
+            $params[] = "%$search%";
+            $params[] = "%$search%";
+        }
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+    }
 
     public function addCustomer($data, $file) {
         try {
@@ -152,26 +165,30 @@ class Customer {
 
         $dst = imagecreatetruecolor($new_width, $new_height);
         imagecopyresampled($dst, $src, 0, 0, 0, 0, $new_width, $new_height, $orig_width, $orig_height);
-
         imagejpeg($dst, $file, 80);
         imagedestroy($src);
         imagedestroy($dst);
     }
 
-    public function getTotalCustomers($search = "") {
-        $sql = "SELECT COUNT(*) as total FROM customers_1";
-        $params = [];
+    public function deleteCustomer($id) {
+        try {
+            $customer = $this->getCustomerById($id);
+            if (!$customer) {
+                return json_encode(["success" => false, "message" => "Customer not found."]);
+            }
 
-        if (!empty($search)) {
-            $sql .= " WHERE name LIKE ? OR contact_name LIKE ? OR email LIKE ?";
-            $params[] = "%$search%";
-            $params[] = "%$search%";
-            $params[] = "%$search%";
+            // Delete image
+            if (!empty($customer['profile_image']) && file_exists($customer['profile_image'])) {
+                unlink($customer['profile_image']);
+            }
+
+            $stmt = $this->conn->prepare("DELETE FROM customers_1 WHERE id = ?");
+            $stmt->execute([$id]);
+
+            return json_encode(["success" => true, "message" => "Customer deleted successfully."]);
+        } catch (Exception $e) {
+            return json_encode(["success" => false, "message" => "Error: " . $e->getMessage()]);
         }
-
-        $stmt = $this->conn->prepare($sql);
-        $stmt->execute($params);
-        return $stmt->fetch(PDO::FETCH_ASSOC)['total'];
     }
 }
 ?>
