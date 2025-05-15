@@ -78,7 +78,7 @@ function getCustomer($id) {
     try {
         $stmt = $conn->prepare("SELECT * FROM customers_1 WHERE id = ?");
         $stmt->execute([$id]);
-        $customer = $stmt->fetch(PDO::FETCH_ASSOC);
+        $customer = $stmt->fetch();
 
         if ($customer) {
             echo json_encode(["success" => true, "data" => $customer]);

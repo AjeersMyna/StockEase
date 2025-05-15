@@ -37,76 +37,91 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: Arial, sans-serif;
-        }
-
         body {
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            background-color: #f4f4f4;
+            background-color: #F5F5DC; /* Seashell - Consistent background */
+            font-family: 'Inter', sans-serif;
         }
 
         .login-container {
-            background: white;
+            background: #FFFFFF;
             padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 12px; /* Slightly more rounded */
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); /* Subtle shadow */
             width: 350px;
             text-align: center;
+            border: 1px solid #E0EEE0; /* Light border */
         }
 
         .login-container h2 {
-            margin-bottom: 20px;
-            font-size: 24px;
-            font-weight: bold;
+            margin-bottom: 25px;
+            font-size: 28px;
+            font-weight: 700; /* Use 700 for bold */
+            color: #2c3e50; /* Darker heading color */
         }
 
         .form-group {
-            margin-bottom: 15px;
-            text-align: left;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            text-align: left; /* Keep label aligned to the left */
         }
 
         .form-group label {
-            font-weight: bold;
+            font-weight: 600;  /* Use 600 for semi-bold */
             display: block;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
+            color: #495057;
+            text-align: left; /* Align label to the left */
         }
 
         .form-group input {
             width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
+            padding: 12px;
+            border: 1px solid #ADD8E6; /* Powder Blue border */
+            border-radius: 6px;
             font-size: 16px;
+            transition: border-color 0.3s ease; /* Smooth transition */
+            align-self: center; /* Center the input field horizontally */
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #87CEFA; /* Light Powder Blue focus border */
+            box-shadow: 0 0 0 3px rgba(135, 206, 250, 0.1);  /* Very subtle shadow */
         }
 
         .login-btn {
             width: 100%;
             padding: 12px;
-            background: #007bff;
-            color: white;
+            background-color: #ADD8E6; /* Powder Blue */
+            color: #2c3e50; /* Darker text color */
             border: none;
-            font-size: 16px;
-            border-radius: 5px;
+            font-size: 18px;
+            border-radius: 6px;
             cursor: pointer;
-            transition: 0.3s;
+            transition: background-color 0.3s ease, color 0.3s ease; /* Smooth transition */
+            font-weight: 600;
         }
 
         .login-btn:hover {
-            background: #0056b3;
+            background-color: #90CAF9; /* Lighter shade on hover */
+            color: #2c3e50;  /* Keep text the same on hover */
         }
 
         .error {
-            color: red;
+            color: #F08080; /* Light Coral */
             margin-bottom: 15px;
             font-size: 14px;
+            background-color: #FFE0E0;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #F08080;
         }
     </style>
 </head>
@@ -119,12 +134,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <label>Username:</label>
                 <input type="text" name="username" required>
             </div>
-            
+
             <div class="form-group">
                 <label>Password:</label>
                 <input type="password" name="password" required>
             </div>
-            
+
             <button type="submit" class="login-btn">Login</button>
         </form>
     </div>

@@ -6,17 +6,67 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 require_once 'db.php';
-require_once 'models/Sale.php';
-require_once 'models/Customer.php';
-require_once 'models/Product.php';
 
-$saleModel = new Sale($conn);
-$customerModel = new Customer($conn);
-$productModel = new Product($conn);
+class SaleModel {
+    private $conn;
 
-$sales = $saleModel->getSales();
-$customers = $customerModel->getCustomers();
-$products = $productModel->getProducts();
+    public function __construct($db) {
+        $this->conn = $db;
+    }
+    // Inside the SaleModel class in sales.php
+    public function getSaleDetails($saleId) {
+        $stmt = $this->conn->prepare("SELECT * FROM sales WHERE id = :id");
+        $stmt->bindParam(':id', $saleId);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function getSaleItems($saleId) {
+        $stmt = $this->conn->prepare("SELECT * FROM sale_items WHERE sale_id = :sale_id");
+        $stmt->bindParam(':sale_id', $saleId);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getSalesWithCustomerName() {
+        $stmt = $this->conn->prepare("
+            SELECT s.*, c.name AS customer_name
+            FROM sales s
+            LEFT JOIN customers_1 c ON s.customer_id = c.id
+            ORDER BY s.sale_date DESC
+        ");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getCustomers() {
+        $stmt = $this->conn->prepare("SELECT * FROM customers_1 ORDER BY name ASC");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getProducts() {
+        $stmt = $this->conn->prepare("SELECT * FROM products ORDER BY name ASC");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getCustomerNameById($customerId) {
+        if ($customerId) {
+            $stmt = $this->conn->prepare("SELECT name FROM customers_1 WHERE id = :id");
+            $stmt->bindParam(':id', $customerId);
+            $stmt->execute();
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result ? $result['name'] : 'Unknown Customer';
+        }
+        return 'Walk-in';
+    }
+}
+
+$saleModel = new SaleModel($conn);
+$sales = $saleModel->getSalesWithCustomerName();
+$customers = $saleModel->getCustomers();
+$products = $saleModel->getProducts();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -26,6 +76,46 @@ $products = $productModel->getProducts();
     <title>StockEase - Sales</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+        }
+        .sidebar {
+            background-color: #343a40;
+            color: white;
+            padding-top: 20px;
+            min-height: 100vh;
+        }
+        .sidebar a {
+            padding: 10px 20px;
+            color: white;
+            display: block;
+            text-decoration: none;
+        }
+        .sidebar a:hover {
+            background-color: #555;
+        }
+        .container-fluid {
+            padding-left: 20px;
+            padding-right: 20px;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+            border-color: #0056b3;
+        }
+        .table th, .table td {
+            vertical-align: middle;
+        }
+        .modal-lg {
+            max-width: 80%;
+        }
+    </style>
 </head>
 <body>
 <div class="d-flex">
@@ -39,36 +129,25 @@ $products = $productModel->getProducts();
             </button>
         </div>
 
-        <table class="table table-striped">
+        <table class="table table-striped" id="salesTable">
             <thead class="table-dark">
                 <tr>
+                    <th>ID</th>
                     <th>Invoice #</th>
-                    <th>Date</th>
                     <th>Customer</th>
                     <th>Amount</th>
-                    <th>Status</th>
+                    <th>Date</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
                 <?php foreach ($sales as $sale): ?>
                 <tr>
+                    <td><?= htmlspecialchars($sale['id']) ?></td>
                     <td><?= htmlspecialchars($sale['invoice_number']) ?></td>
-                    <td><?= date('d M Y', strtotime($sale['sale_date'])) ?></td>
                     <td><?= htmlspecialchars($sale['customer_name'] ?? 'Walk-in') ?></td>
                     <td>₹<?= number_format($sale['total_amount'], 2) ?></td>
-                    <td>
-                        <?php if (isset($sale['status'])): ?>
-                            <span class="badge bg-<?=
-                                $sale['status'] == 'completed' ? 'success' :
-                                ($sale['status'] == 'pending' ? 'warning' : 'danger')
-                            ?>">
-                                <?= ucfirst($sale['status']) ?>
-                            </span>
-                        <?php else: ?>
-                            <span class="badge bg-secondary">Unknown</span>
-                        <?php endif; ?>
-                    </td>
+                    <td><?= date('d M Y h:i:s A', strtotime($sale['sale_date'])) ?></td>
                     <td>
                         <a href="view_sale.php?id=<?= $sale['id'] ?>" class="btn btn-sm btn-info">
                             <i class="fas fa-eye"></i>
@@ -105,27 +184,23 @@ $products = $productModel->getProducts();
                             </div>
 
                             <div class="card mb-3">
-                                <div class="card-header bg-dark text-white">
+                                <div class="card-header">
                                     <h6 class="mb-0">Products</h6>
                                 </div>
                                 <div class="card-body">
                                     <div class="row mb-3">
                                         <div class="col-md-5">
-                                            <select class="form-select" id="productSelect">
+                                            <select class="form-select" id="productSelect" required>
                                                 <option value="">Select Product</option>
-                                                <?php
-                                                foreach ($products as $product):
-                                                ?>
-                                                <option value="<?= $product['id'] ?>"
-                                                    data-price="<?= $product['price'] ?>"
-                                                    data-stock="<?= $product['stock_quantity'] ?>">
+                                                <?php foreach ($products as $product): ?>
+                                                <option value="<?= $product['id'] ?>" data-price="<?= $product['price'] ?>" data-stock="<?= $product['stock_quantity'] ?>">
                                                     <?= htmlspecialchars($product['name']) ?> (₹<?= $product['price'] ?>)
                                                 </option>
                                                 <?php endforeach; ?>
                                             </select>
                                         </div>
                                         <div class="col-md-3">
-                                            <input type="number" class="form-control" id="productQty" placeholder="Qty" min="1" value="1">
+                                            <input type="number" class="form-control" id="productQty" placeholder="Qty" min="1" value="1" required>
                                         </div>
                                         <div class="col-md-2">
                                             <button type="button" class="btn btn-primary w-100" id="addProductBtn">
@@ -160,48 +235,61 @@ $products = $productModel->getProducts();
                                 <button type="submit" class="btn btn-primary">Save Sale</button>
                             </div>
                         </form>
-                                            </div>
-                                            <div class="text-end mt-3">
-                                                <button type="submit" class="btn btn-primary">Save Sale</button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// Product Management
 const productTable = document.getElementById('productTable').querySelector('tbody');
 const grandTotalEl = document.getElementById('grandTotal');
+const salesTableBody = document.getElementById('salesTable').querySelector('tbody');
 let products = [];
 
 document.getElementById('addProductBtn').addEventListener('click', function() {
     const productSelect = document.getElementById('productSelect');
     const productQty = document.getElementById('productQty');
 
-    if (!productSelect.value || !productQty.value || productQty.value < 1) {
+    if (!productSelect.value || !productQty.value || parseInt(productQty.value) < 1) {
         alert('Please select a product and valid quantity');
         return;
     }
 
+    const selectedOption = productSelect.options[productSelect.selectedIndex];
+    if (!selectedOption || !selectedOption.dataset.price) {
+        alert('Error: Product price not found.');
+        return;
+    }
+
     const productId = productSelect.value;
-    const productName = productSelect.options[productSelect.selectedIndex].text.split(' (₹')[0];
-    const price = parseFloat(productSelect.dataset.price);
+    const productName = selectedOption.text.split(' (₹')[0];
+    const priceString = selectedOption.dataset.price;
+    let price = parseFloat(priceString.replace(',', '.'));
+
+    if (isNaN(price)) {
+        console.error('Could not parse price:', priceString);
+        alert('Error: Invalid product price.');
+        return;
+    }
+
     const quantity = parseInt(productQty.value);
+    const stock = parseInt(selectedOption.dataset.stock);
 
-    // Add to array
-    products.push({
-        id: productId,
-        name: productName,
-        price: price,
-        quantity: quantity
-    });
+    if (quantity > stock) {
+        alert(`Insufficient stock for ${productName}. Available: ${stock}`);
+        return;
+    }
 
-    // Update UI
+    const existingProductIndex = products.findIndex(p => p.id === productId);
+    if (existingProductIndex > -1) {
+        products[existingProductIndex].quantity += quantity;
+    } else {
+        products.push({ id: productId, name: productName, price: price, quantity: quantity });
+    }
+
     renderProductTable();
     productQty.value = 1;
 });
@@ -232,7 +320,6 @@ function renderProductTable() {
     grandTotalEl.textContent = `₹${grandTotal.toFixed(2)}`;
 }
 
-// Remove product
 productTable.addEventListener('click', function(e) {
     if (e.target.closest('.remove-product')) {
         const index = e.target.closest('.remove-product').dataset.index;
@@ -241,7 +328,6 @@ productTable.addEventListener('click', function(e) {
     }
 });
 
-// Form Submission
 document.getElementById('saleForm').addEventListener('submit', function(e) {
     e.preventDefault();
 
@@ -253,25 +339,63 @@ document.getElementById('saleForm').addEventListener('submit', function(e) {
     const formData = {
         invoice_number: this.invoice_number.value,
         customer_id: this.customer_id.value || null,
-        total_amount: parseFloat(grandTotalEl.textContent.replace('₹', '')),
-        products: products
+        total_amount: products.reduce((sum, product) => sum + (product.price * product.quantity), 0),
+        products: products.map(product => ({
+            id: product.id,
+            quantity: product.quantity,
+            price: product.price
+        }))
     };
+
+    console.log('Products array before sending:', products);
 
     fetch('api/add_sale.php', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json'
+        },
         body: JSON.stringify(formData)
     })
     .then(response => response.json())
     .then(data => {
-        if (data.success) {
-            alert('Sale saved successfully!');
-            window.location.reload();
+        if (data.success && data.sale_id) {
+            const newSale = {
+                id: data.sale_id,
+                invoice_number: formData.invoice_number,
+                customer_id: formData.customer_id,
+                total_amount: formData.total_amount,
+                sale_date: new Date().toLocaleString('en-IN') // Simple display of current time
+            };
+
+            const newRow = salesTableBody.insertRow(0); // Insert at the top
+            newRow.innerHTML = `
+                <td>${newSale.id}</td>
+                <td>${newSale.invoice_number}</td>
+                <td>${newSale.customer_id ? 'Fetching...' : 'Walk-in'}</td>
+                <td>₹${parseFloat(newSale.total_amount).toFixed(2)}</td>
+                <td>${newSale.sale_date}</td>
+                <td>
+                    <a href="view_sale.php?id=${newSale.id}" class="btn btn-sm btn-info">
+                        <i class="fas fa-eye"></i>
+                    </a>
+                </td>
+            `;
+            alert('Sale created successfully! Sale ID: ' + data.sale_id);
+            document.getElementById('saleForm').reset();
+            products = [];
+            renderProductTable();
+            const newSaleModal = bootstrap.Modal.getInstance(document.getElementById('newSaleModal'));
+            newSaleModal.hide();
         } else {
-            alert('Error: ' + (data.error || 'Failed to save sale'));
+            alert('Error creating sale: ' + data.message);
         }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while creating the sale.');
     });
 });
 </script>
 </body>
 </html>
+

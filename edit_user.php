@@ -46,6 +46,63 @@ try {
     <title>StockEase - Edit User</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        body {
+            background-color: #F5F5DC; /* Seashell */
+        }
+        h2 {
+            color: #2c3e50; /* Darker, more professional heading */
+            font-weight: 700;
+        }
+        .form-control {
+            border-color: #ADD8E6; /* Powder Blue */
+            border-radius: 0.5rem;
+        }
+        .form-control:focus {
+            border-color: #87CEFA; /* Light Powder Blue */
+            box-shadow: 0 0 0 0.25rem rgba(135, 206, 250, 0.25);
+        }
+        .form-select {
+            border-color: #ADD8E6; /* Powder Blue */
+            border-radius: 0.5rem;
+        }
+        .form-select:focus {
+            border-color: #87CEFA; /* Light Powder Blue */
+            box-shadow: 0 0 0 0.25rem rgba(135, 206, 250, 0.25);
+        }
+        .btn-primary {
+            background-color: #ADD8E6 !important; /* Powder Blue */
+            color: #2c3e50 !important;
+            border-color: #ADD8E6 !important;
+            border-radius: 0.5rem;
+        }
+        .btn-primary:hover {
+            background-color: #90CAF9 !important; /* Lighter shade on hover */
+            border-color: #90CAF9 !important;
+        }
+        .btn-secondary {
+            background-color: #E0EEE0 !important; /* Honeydew */
+            color: #2c3e50 !important;
+            border-color: #E0EEE0 !important;
+            border-radius: 0.5rem;
+        }
+        .btn-secondary:hover {
+            background-color: #F0FFF0 !important; /* Lighter shade on hover */
+            border-color: #F0FFF0 !important;
+        }
+        .alert-danger {
+            background-color: #F08080 !important; /* Light Coral */
+            color: #fff !important;
+            border-color: #F08080 !important;
+            border-radius: 0.5rem;
+        }
+        .alert-danger .btn-close {
+            color: #fff;
+        }
+        .invalid-feedback {
+            color: #F08080;
+        }
+    </style>
 </head>
 <body>
 <div class="d-flex">
@@ -65,17 +122,17 @@ try {
             <input type="hidden" name="action" value="edit">
             <input type="hidden" name="id" value="<?= $user['id'] ?>">
             <div class="mb-3">
-                <label for="username">Username</label>
+                <label for="username" class="form-label">Username</label>
                 <input type="text" class="form-control" id="username" name="username" value="<?= htmlspecialchars($user['username']) ?>" required>
                 <div id="username-feedback" class="invalid-feedback"></div>
             </div>
             <div class="mb-3">
-                <label for="password">Password (Leave blank to keep current)</label>
+                <label for="password" class="form-label">Password (Leave blank to keep current)</label>
                 <input type="password" class="form-control" id="password" name="password">
                 <div id="password-feedback" class="invalid-feedback"></div>
             </div>
-             <div class="mb-3">
-                <label for="role">Role</label>
+            <div class="mb-3">
+                <label for="role" class="form-label">Role</label>
                 <select class="form-select" id="role" name="role" required>
                     <option value="">Select Role</option>
                     <?php foreach ($roles as $role): ?>
@@ -85,7 +142,7 @@ try {
                 <div id="role-feedback" class="invalid-feedback"></div>
             </div>
             <div class="mb-3">
-                <label for="email">Email (Optional)</label>
+                <label for="email" class="form-label">Email (Optional)</label>
                 <input type="email" class="form-control" id="email" name="email" value="<?= htmlspecialchars($user['email']) ?>">
                 <div id="email-feedback" class="invalid-feedback"></div>
             </div>
@@ -102,19 +159,19 @@ try {
         const usernameInput = document.getElementById('username');
         const passwordInput = document.getElementById('password');
         const roleSelect = document.getElementById('role');
-          const emailInput = document.getElementById('email');
+        const emailInput = document.getElementById('email');
 
         editUserForm.addEventListener('submit', (event) => {
             let isValid = true;
 
             usernameInput.classList.remove('is-invalid');
             passwordInput.classList.remove('is-invalid');
-             roleSelect.classList.remove('is-invalid');
-             emailInput.classList.remove('is-invalid');
+            roleSelect.classList.remove('is-invalid');
+            emailInput.classList.remove('is-invalid');
             document.getElementById('username-feedback').textContent = '';
             document.getElementById('password-feedback').textContent = '';
-             document.getElementById('role-feedback').textContent = '';
-              document.getElementById('email-feedback').textContent = '';
+            document.getElementById('role-feedback').textContent = '';
+            document.getElementById('email-feedback').textContent = '';
 
             if (!usernameInput.value.trim()) {
                 usernameInput.classList.add('is-invalid');
@@ -132,13 +189,13 @@ try {
                 isValid = false;
             }
 
-             if (!roleSelect.value) {
+            if (!roleSelect.value) {
                 roleSelect.classList.add('is-invalid');
                 document.getElementById('role-feedback').textContent = 'Please select a role';
                 isValid = false;
             }
 
-             if (emailInput.value.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.value.trim())) {
+            if (emailInput.value.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.value.trim())) {
                 emailInput.classList.add('is-invalid');
                 document.getElementById('email-feedback').textContent = 'Invalid email format';
                 isValid = false;
